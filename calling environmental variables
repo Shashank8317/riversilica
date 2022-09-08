@@ -1,0 +1,21 @@
+import os
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    
+    MY_IP = os.environ['myIp']
+    CMS = os.environ['cms']
+    PIX_FIX = os.environ['pixFix']
+    
+    print('myIp:', MY_IP)
+    print('cms:', CMS)
+    print('pixFix:', PIX_FIX)
+    
+    ipAdressJson = {"cms":CMS}
+    
+    return {
+        'statuscode': 200,
+        'body': json.dumps(ipAdressJson)
+        
+    }
