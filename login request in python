@@ -1,0 +1,19 @@
+import requests
+import os 
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    
+    Method = os.environ['method']
+    PASSWORD = os.environ['password']
+
+    payload = {'user_name': 'admin', 'password': 'pixfix@123'}
+    r = requests.post('https://skycode5.riversilica.com/users', data=payload)
+
+    print('method:', Method)
+    print('password:', PASSWORD)
+   
+
+
+    print(r.text)
