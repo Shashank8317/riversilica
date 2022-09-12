@@ -17,3 +17,6 @@ def lambda_handler(event, context):
 
 
     print(r.text)
+
+
+https://www.youtube.com/watch?v=rDbxCeTzw_k
