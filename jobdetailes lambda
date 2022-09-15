@@ -1,0 +1,24 @@
+import requests
+import os 
+import json
+
+def lambda_handler(event, context):
+
+     session = requests.Session()
+     print(session.cookies.get_dict())
+     data={"user_name":event["user_name"], "password":event["password"]}
+     response = session.post('http://skycode5.riversilica.com/users',data=data)
+     
+     
+     if(len(session.cookies.get_dict())>0):
+          phpSessionId = (session.cookies.get_dict()["PHPSESSID"])
+          
+          response = session.get("http://skycode5.riversilica.com/jobs/job_get/LiveRTMPin_job1",headers={"PHPSESSID":phpSessionId})
+          return{
+            'status':'true', 'data':response.json()
+     }
+          
+     return{
+            'status':response.json()["status"], 'message':"Authentication Failed"
+     }
+     
