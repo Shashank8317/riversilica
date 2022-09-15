@@ -1,0 +1,27 @@
+import requests
+import os 
+import json
+
+def lambda_handler(event, context):
+
+     session = requests.Session()
+     print(session.cookies.get_dict())
+     data={"user_name":event["user_name"], "password":event["password"]}
+     response = session.post('http://skycode5.riversilica.com/users',data=data)
+     
+     s1="null"
+     if(len(session.cookies.get_dict())>0):
+          s1 = (session.cookies.get_dict()["PHPSESSID"])
+          return{
+            'sessionId': s1, 'status':response.json()["status"], 'message':response.json()["message"]
+          }
+          
+     return{
+            'status':response.json()["status"], 'message':response.json()["message"]
+     }
+     
+    
+     
+
+
+https://www.youtube.com/watch?v=rDbxCeTzw_k
