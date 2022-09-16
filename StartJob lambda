@@ -13,7 +13,7 @@ def lambda_handler(event, context):
      if(len(session.cookies.get_dict())>0):
           phpSessionId = (session.cookies.get_dict()["PHPSESSID"])
           
-          response = session.post("http://skycode5.riversilica.com/jobs/job_start/LiveRTMPin_job1?node_name=10230157",headers={"PHPSESSID":phpSessionId})
+          response = session.get("http://skycode5.riversilica.com/jobs/job_start/LiveRTMPin_job1?node_name=10230157",headers={"PHPSESSID":phpSessionId})
           return{
             'status':'true', 'message':'job started successfully'
      }
