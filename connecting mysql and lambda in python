@@ -27,6 +27,11 @@ def lambda_handler(event, context):
     save_events(event, context)
     
     
+    
+  note: Grant permission
+  https://stackoverflow.com/questions/1559955/host-xxx-xx-xxx-xxx-is-not-allowed-to-connect-to-this-mysql-server
+    
+    
 ///// second option ///////////    
     
 import pymysql
