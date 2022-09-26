@@ -24,4 +24,61 @@ def save_events(event, context):
 
 def lambda_handler(event, context):
     save_events(event, context)
+    
+    
+///// second option ///////////    
+    
+import pymysql
+import sys
+import json
+import logging
+
+REGION = 'us-east-2'
+
+rds_host  = "ec2-18-117-119-142.us-east-2.compute.amazonaws.com"
+name = "root1"
+password = "Shashank@123"
+db_name = "dummy"
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+#def lambda_handler(event, context):
+
+    
+try:   
+    conn = pymysql.connect(host=rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+    conn.commit()
+except pymysql.MySQLError as e:
+    logger.error("ERROR: Unexpected error: Could not connect to MySQL instance.")
+    logger.error(e)
+    sys.exit()
+   
+logger.info("SUCCESS: Connection to RDS MySQL instance succeeded")
+def handler(event, context): 
+    
+    result = []
+    name = ""
+    with conn.cursor() as cur:
+        cur.execute("""insert into person (ID) values( %s)""" % (event['ID']))
+        print("data inserted successfully")
+        cur.execute("""select * from person""")
+        #print("inserted data are"  )
+        # conn.commit()
+        # cur.close()
+        data=cur.fetchall()
+        for row in data:
+            logger.info(row)
+            name=row[0]
+        return name
+            #result.append(list(row))
+        # print "Data from RDS..."
+        #print(result)
+def lambda_handler(event, context):
+    name = handler(event, context)
+    return {
+        'body': json.dumps(name)
+    }
+
         
