@@ -14,6 +14,7 @@ def save_events(event, context):
     conn = pymysql.connect(host=rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
     with conn.cursor() as cur:
         cur.execute("""insert into person (ID) values( %s)""" % (event['ID']))
+        print("data inserted successfuly")
         cur.execute("""select * from person""")
         conn.commit()
         cur.close()
