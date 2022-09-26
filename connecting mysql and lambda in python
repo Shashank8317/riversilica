@@ -1,0 +1,27 @@
+import pymysql
+import sys
+
+REGION = 'us-east-2'
+
+rds_host  = "ec2-18-117-119-142.us-east-2.compute.amazonaws.com"
+name = "root1"
+password = "Shashank@123"
+db_name = "dummy"
+
+def save_events(event, context):
+
+    result = []
+    conn = pymysql.connect(host=rds_host, user=name, passwd=password, db=db_name, connect_timeout=5)
+    with conn.cursor() as cur:
+        cur.execute("""insert into person (ID) values( %s)""" % (event['ID']))
+        cur.execute("""select * from person""")
+        conn.commit()
+        cur.close()
+        for row in cur:
+            result.append(list(row))
+        # print "Data from RDS..."
+        # print result
+
+def lambda_handler(event, context):
+    save_events(event, context)
+        
