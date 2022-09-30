@@ -1,22 +1,47 @@
 import requests
 import os 
 import json
+import pymysql
+import logging
 
 def lambda_handler(event, context):
 
-     session = requests.Session()
-     print(session.cookies.get_dict())
-     data={"user_name":event["user_name"], "password":event["password"]}
-     response = session.post('http://skycode5.riversilica.com/users',data=data)
-     
-     
-     if(len(session.cookies.get_dict())>0):
-          phpSessionId = (session.cookies.get_dict()["PHPSESSID"])
-          
-          response = session.get("http://skycode5.riversilica.com/jobs/job_list",headers={"PHPSESSID":phpSessionId})
-          return{
-            'status':'true', 'data':response.json()
-     }
+    session = requests.Session()
+    print(session.cookies.get_dict())
+    data={"user_name":"admin", "password":"pixfix@123"}
+    response = session.post('http://skycode5.riversilica.com/users',data=data)
+    sql_server  = "ec2-3-141-12-134.us-east-2.compute.amazonaws.com"
+    name = "riversilica"
+    password = "Shashank@123"
+    db_name = "nuzrbox"
+    conn = pymysql.connect(host=sql_server, user=name, passwd=password, db=db_name)
+    
+    if(len(session.cookies.get_dict())>0):
+        phpSessionId = (session.cookies.get_dict()["PHPSESSID"])
+        responseStr=""
+        response = session.get("http://skycode5.riversilica.com/jobs/job_list",headers={"PHPSESSID":phpSessionId})
+        responseData = response.json()
+    
+    for job in responseData: 
+        if len(job)>0:
+            jobId = job["job_id"]
+            jobNAME = job["job_name"]
+            jobStatus = job["job_status"]
+            jobtype = job["job_type"]
+            query = "select * from TblJobDetailes where jobID='"+jobId+"'"
+            cur=conn.cursor()
+            cur.execute(query)
+            #print(cur.rowcount)
+            
+            if(cur.rowcount==0):
+                print("I am ready to insert "+jobId)
+                cur = conn.cursor()
+                query = "insert into TblJobDetailes (jobID, jobNAME, RTMPurl, status) values('"+jobId+"', '"+jobNAME+"', '"+jobtype+"', '"+jobStatus+"')"
+                cur.execute(query)
+                conn.commit()
+            else: 
+                print("not inserted")
+    return {'message':"JOB DETAILS", 'data':responseData}
           
      return{
             'status':response.json()["status"], 'message':"Authentication Failed"
