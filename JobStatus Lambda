@@ -1,24 +1,39 @@
 import requests
 import os 
 import json
+import pymysql
+import logging
 
 def lambda_handler(event, context):
 
-     session = requests.Session()
-     print(session.cookies.get_dict())
-     data={"user_name":event["user_name"], "password":event["password"]}
-     response = session.post('http://skycode5.riversilica.com/users',data=data)
-     
-     
-     if(len(session.cookies.get_dict())>0):
-          phpSessionId = (session.cookies.get_dict()["PHPSESSID"])
-          
-          response = session.get("http://skycode5.riversilica.com/jobs/api_job_stats/LiveRTMPin_job1",headers={"PHPSESSID":phpSessionId})
-          return{
-            'status':'true', 'data':response.json()
-     }
-          
-     return{
-            'status':response.json()["status"], 'message':"Authentication Failed"
-     }
+    session = requests.Session()
+    print(session.cookies.get_dict())
+    data={"user_name":"admin", "password":"pixfix@123"}
+    response = session.post('http://skycode5.riversilica.com/users',data=data)
+    sql_server  = "ec2-3-141-12-134.us-east-2.compute.amazonaws.com"
+    name = "riversilica"
+    password = "Shashank@123"
+    db_name = "nuzrbox"
+    conn = pymysql.connect(host=sql_server, user=name, passwd=password, db=db_name)
+    
+    if(len(session.cookies.get_dict())>0):
+        phpSessionId = (session.cookies.get_dict()["PHPSESSID"])
+        responseStr=""
+        response = session.get("http://skycode5.riversilica.com/jobs/job_list",headers={"PHPSESSID":phpSessionId})
+        responseData = response.json()
+        
+        cur = conn.cursor()
+        query = "select * from TblJobDetailes where status = 'failed_force_killed' or status = 'failed' or status = 'stopped' or status = 'completed'"
+        cur=conn.cursor()
+        cur.execute(query)
+        result = cur.fetchone()
+        
+        if(cur.rowcount==0):
+            return { 'status': 'FAIL', 'message':'No Job Available'}
+        else:
+            return { 'result': json.dumps(result,default=str)} 
+            
+    
+    
+    
      
