@@ -1,0 +1,89 @@
+const mysql = require('mysql');
+const qs = require('qs');
+const axios = require('axios');
+const axios1 = require('axios');
+
+const pool = mysql.createPool({
+  connectionLimit : 10,
+  host     : 'soapboxinternal.riversilica.com',
+  user     : 'pixfixlocal',
+  password : 'Pixfix@123',
+  database : 'pixfix_test'
+});
+
+var job_Name;
+var job_url;
+exports.handler = (event, context, callback) => {
+ context.callbackWaitsForEmptyEventLoop = false;
+  pool.getConnection(function(err, con) {
+    if (err) throw err;
+    con.query("SELECT * FROM tbl_job_details", function (err, result, fields) {
+    if (err) throw err;
+                    // job_Name = result[1].jobNAME;
+                    // job_url = result[1].RTMPurl;
+                    job_Name = result[1].jobNAME;
+                    job_url = result[1].RTMPurl;
+                    
+    });
+    
+ 
+                  
+var url = "http://skycode5.riversilica.com/users";
+  const data={};
+  data.user_name = "admin";
+  data.password = "pixfix@123";
+  
+  axios.post(url, qs.stringify(data))
+    .then((res) => {
+      console.log(url);
+      console.log(JSON.stringify(res.data));
+        
+        if(res.data["status"]=="success"){
+          var cookieRes=res.headers['set-cookie'];
+          var cookieArray=cookieRes.split(";");
+          var sessionValArray=cookieArray[0].split("=");
+          var phpSessionId=cookieArray[0];
+          
+          let url1 = "http://skycode5.riversilica.com/jobs/job_get/"+job_Name;
+                        console.log(url1);
+                       
+                           axios1.get(url1, {headers:{"Cookie":phpSessionId}})
+                     
+                           .then((res1) =>{ 
+                                var response = res1.data.pfmt_job.job_status;
+                                
+                               if(response !="running")
+                            {
+                                
+                                       callback(null,"Job is not running for stoping"); 
+                                        
+                                }
+                                else {
+                                    let url2 = "http://skycode5.riversilica.com/jobs/job_stop/"+job_Name;
+                                    axios1.post(url2,[], {headers:{"Cookie":phpSessionId}})
+                                    
+                                    .then((res2) =>{ 
+                                         console.log("job stoped successfully");
+                                        callback(null,"Job stopped successfully");
+                                        
+                                    })
+                                    .catch((error) => {
+                                       console.log("error while stopping job",JSON.stringify(error));
+                                    
+                                })
+                                 con.query("update tbl_job_details set status = 'free', currentUser = 'null' where jobNAME = '"+job_Name+"'" , function (err, result, fields){
+                                  if (err) throw err;
+                                 })
+                                 }
+                                })
+                                
+                                
+                           }
+                       
+                     })
+                
+                
+                })
+        }
+
+
