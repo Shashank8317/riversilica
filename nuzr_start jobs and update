@@ -1,7 +1,17 @@
 const mysql = require('mysql');
 const qs = require('qs');
 const axios = require('axios');
-const axios1 = require('axios');
+var FormData = require('form-data');
+var fs = require('fs');
+                                    // const formData = new FormData();
+                                    // formData.append('title', 'new live assefffffft-151');
+                                    // formData.append('assetUrl', 'http://rsweb.dishhome.com.np/fightsportshd_03_px0219285/index.m3u8');
+                                    // formData.append('thumbnails', fs.createReadStream('./photos local/KGF.jpg'));
+                                    // formData.append('account_id', 1);
+                                    // formData.append('createdBy', '94');
+                                    // formData.append('isDRMRequired', '1');
+                                    // formData.append('description', 'for testing');
+//const axios1 = require('axios');
 
 const pool = mysql.createPool({
   connectionLimit : 10,
@@ -18,6 +28,14 @@ exports.handler = (event, context, callback) => {
   var apiResponse = {};
   var job_iD;
   var job_Name;
+  var job_url;
+  var job_out_url;
+//  var user_name='kalindh';
+ // var title='streaming';
+ // var location = 'banglore';
+  
+
+  
   context.callbackWaitsForEmptyEventLoop = false;
   pool.getConnection(function(err, con) {
     if (err) throw err;
@@ -34,9 +52,20 @@ exports.handler = (event, context, callback) => {
 
 else{
     
-   
+    //user = result[0].currentUser;
      job_iD= result[0].jobID;
-     job_Name= result[0].jobNAME ;
+     job_Name= result[0].jobNAME;
+     job_url = result[0].RTMPurl;
+     job_out_url = result[0].HlsOutUrl;
+     
+     console.log(event.key1);
+     //console.log(username1);
+     //console.log(title2);
+     //console.log(location3);
+     
+     
+    
+     
      
      console.log(job_iD);
      
@@ -91,29 +120,82 @@ else{
                     axios.get(url2, {headers:{"Cookie": phpSessionId}})
                     //console.log(phpSessionId)
                     .then((res3) =>{ 
-                      console.log("started");
+                            // if(res3.data.status=="pass"){
+                          //   console.log("responseeeeeeeeeeeee",res3)
+                          
+                      
+
+                        
+                        //var link = "http://192.46.214.49:3000/pixfixws/create/live";
+           var username=event['username'];
+           //var job_url=event['job_url'];
+           var title=event['title']; 
+           var location=event['location'];
+          // var username1=event['job_url'];           
+               
+        con.query("INSERT INTO tbl_live_assets1(assetUrl, username, title, location, isDRMRequired) VALUES('"+job_url+"','"+username+"', '"+title+"','"+location+"', 'false' )", function (err, result1, fields){
+                                  if (err) throw err;
+                                    console.log(result1);
+                                
+                    // console.log("live assets");
+                    //             axios.post(link, formData, {
+                    //                                 headers: { "Content-Type": "multipart/form-data",},
+                    //                                         })
+                                                           
+                    //                                       .then((resp) => {
+                    //                                         console.log(resp.data);
+                                                             
+                    //                                         // callback(null,"assets created successfully");
+                    //                                                       })
+                    //                                                   .catch((err) => {
+                    //                                                         console.log(err);
+                    //                                                         });
+           
+          
+                    //   }
+       
+                     
                      
                       
-                      //var serverUrl = res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url;
+                      var serverUrl = res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url;
                       var name = res2.data.pfmt_job.job_name;
                       var ID = res2.data.pfmt_job.pfmt_job_id;
+                      var apiResponse1 = {};
+                      var serverUrl= 
+                     
+                      
+                        
+                                                                                      
+                      
+                      
+            
+                      
                       
                       // console.log(res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url);
                       // console.log(name);
                       // console.log(ID);
                      
-                       var apiResponse1 = {};
-                     // apiResponse1.Url=serverUrl;
-                      apiResponse1.Name=name;
-                      apiResponse1.ID = ID;
                       
-                      callback(null,apiResponse1);
+                      
+                      apiResponse1.Url=job_url;
+                      apiResponse1.Name=name;
+                      apiResponse1.job_out_url = job_out_url;
+                     // apiResponse1.user = user;
+                     
+                      
+                      callback(null,apiResponse1,result1);
                     });
-                }else {
-                  
-                  callback(null, "Job is already running");
+                    });
                 }
-         
+                else {
+                  let ress;
+                  callback(null, "Job is already running");
+                  callback(null,ress.data);
+                }
+              
+                   
+                  
+                
                     
                 
 }).catch((error)=>{
@@ -124,6 +206,7 @@ else{
         
       //  callback(apiResponse,null);
 });
+
   con.release();
     
   });
@@ -131,10 +214,13 @@ else{
 });
 
 }
-                
+
+                 
 
 });
-})
-}
+});
+};
+
+
 
 
