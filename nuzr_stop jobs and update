@@ -1,7 +1,17 @@
 const mysql = require('mysql');
 const qs = require('qs');
 const axios = require('axios');
-const axios1 = require('axios');
+var FormData = require('form-data');
+var fs = require('fs');
+                                    // const formData = new FormData();
+                                    // formData.append('title', 'new live assefffffft-151');
+                                    // formData.append('assetUrl', 'http://rsweb.dishhome.com.np/fightsportshd_03_px0219285/index.m3u8');
+                                    // formData.append('thumbnails', fs.createReadStream('./photos local/KGF.jpg'));
+                                    // formData.append('account_id', 1);
+                                    // formData.append('createdBy', '94');
+                                    // formData.append('isDRMRequired', '1');
+                                    // formData.append('description', 'for testing');
+//const axios1 = require('axios');
 
 const pool = mysql.createPool({
   connectionLimit : 10,
@@ -11,24 +21,51 @@ const pool = mysql.createPool({
   database : 'pixfix_test'
 });
 
-var job_Name;
-var job_url;
+// var job_name;
+// var job_url;
+
 exports.handler = (event, context, callback) => {
- context.callbackWaitsForEmptyEventLoop = false;
+  var apiResponse = {};
+  var job_iD;
+  var job_Name;
+  var job_url;
+  var job_out_url;
+  var user_name='kalindh';
+  var title='streaming';
+  var location = 'banglore';
+  
+  context.callbackWaitsForEmptyEventLoop = false;
   pool.getConnection(function(err, con) {
     if (err) throw err;
-    con.query("SELECT * FROM tbl_job_details", function (err, result, fields) {
+    con.query("SELECT * FROM tbl_job_details where status = 'free'", function (err, result, fields) {
     if (err) throw err;
-                    // job_Name = result[1].jobNAME;
-                    // job_url = result[1].RTMPurl;
-                    job_Name = result[1].jobNAME;
-                    job_url = result[1].RTMPurl;
-                    
-    });
+    console.log(result.length);
+    if(result.length == 0){
+      console.log("no job found");
+      apiResponse.status=false;
+      apiResponse.message="NO JOB FOUND";
+      callback(null, apiResponse);
+       
+    }
+
+else{
     
- 
-                  
-var url = "http://skycode5.riversilica.com/users";
+    //user = result[0].currentUser;
+     job_iD= result[0].jobID;
+     job_Name= result[0].jobNAME;
+     job_url = result[0].RTMPurl;
+     job_out_url = result[0].HlsOutUrl;
+    
+     
+     
+     console.log(job_iD);
+     
+  con.query("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobID = '"+job_iD+"'" , function (err, result, fields) {
+       
+  //console.log("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobId = '"+job_iD+"'")
+    if (err) throw err;
+    
+  var url = "http://skycode5.riversilica.com/users";
   const data={};
   data.user_name = "admin";
   data.password = "pixfix@123";
@@ -44,46 +81,133 @@ var url = "http://skycode5.riversilica.com/users";
           var sessionValArray=cookieArray[0].split("=");
           var phpSessionId=cookieArray[0];
           
-          let url1 = "http://skycode5.riversilica.com/jobs/job_get/"+job_Name;
-                        console.log(url1);
-                       
-                           axios1.get(url1, {headers:{"Cookie":phpSessionId}})
-                     
-                           .then((res1) =>{ 
-                                var response = res1.data.pfmt_job.job_status;
-                                
-                               if(response !="running")
-                            {
-                                
-                                       callback(null,"Job is not running for stoping"); 
-                                        
-                                }
-                                else {
-                                    let url2 = "http://skycode5.riversilica.com/jobs/job_stop/"+job_Name;
-                                    axios1.post(url2,[], {headers:{"Cookie":phpSessionId}})
-                                    
-                                    .then((res2) =>{ 
-                                         console.log("job stoped successfully");
-                                        callback(null,"Job stopped successfully");
-                                        
-                                    })
-                                    .catch((error) => {
-                                       console.log("error while stopping job",JSON.stringify(error));
-                                    
-                                })
-                                 con.query("update tbl_job_details set status = 'free', currentUser = 'null' where jobNAME = '"+job_Name+"'" , function (err, result, fields){
-                                  if (err) throw err;
-                                 })
-                                 }
-                                })
-                                
-                                
-                           }
-                       
-                     })
-                
-                
-                })
+          // apiResponse.status=true;
+          // apiResponse.messgae="JOB DETAILS";
+          // apiResponse.data=cookieArray[0];
+          // callback(null, apiResponse);
+                      
+        }else{
+          apiResponse.status=false;
+          apiResponse.messgae="Invalid Authorization";
+          callback(null, apiResponse);
         }
+        
+                 let url1 = "http://skycode5.riversilica.com/jobs/job_get/"+job_Name;
+                // console.log(url1);
+                axios.get(url1, {headers:{"Cookie":phpSessionId}})
+               // console.log(phpSessionId)
+                .then((res2) =>{ 
+                  console.log("entering");
+                  //console.log(res2.data.pfmt_job.node_name);
+                
+                // console.log(res2.data.pfmt_job.job_status);
+                var response = res2.data.pfmt_job.job_status;
+                var node = res2.data.pfmt_job.node_name;
+                
+                if(response != "running")
+                {
+                   let url2 = "http://skycode5.riversilica.com/jobs/job_start/"+job_Name+"?node_name="+node;
+                   //console.log(url2)
+                    axios.get(url2, {headers:{"Cookie": phpSessionId}})
+                    //console.log(phpSessionId)
+                    .then((res3) =>{ 
+                            // if(res3.data.status=="pass"){
+                          //   console.log("responseeeeeeeeeeeee",res3)
+                          
+                      
+
+                        
+                        //var link = "http://192.46.214.49:3000/pixfixws/create/live";
+                        
+               
+        con.query("INSERT INTO tbl_live_assets1(assetUrl, username, title, location, isDRMRequired) VALUES('"+job_url+"','"+user_name+"', '"+title+"','"+location+"', 'false' )", function (err, result1, fields){
+                                  if (err) throw err;
+                                    console.log(result1);
+                                
+                    // console.log("live assets");
+                    //             axios.post(link, formData, {
+                    //                                 headers: { "Content-Type": "multipart/form-data",},
+                    //                                         })
+                                                           
+                    //                                       .then((resp) => {
+                    //                                         console.log(resp.data);
+                                                             
+                    //                                         // callback(null,"assets created successfully");
+                    //                                                       })
+                    //                                                   .catch((err) => {
+                    //                                                         console.log(err);
+                    //                                                         });
+           
+          
+                    //   }
+       
+                     
+                     
+                      
+                      var serverUrl = res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url;
+                      var name = res2.data.pfmt_job.job_name;
+                      var ID = res2.data.pfmt_job.pfmt_job_id;
+                      var apiResponse1 = {};
+                      var serverUrl= 
+                     
+                      
+                        
+                                                                                      
+                      
+                      
+            
+                      
+                      
+                      // console.log(res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url);
+                      // console.log(name);
+                      // console.log(ID);
+                     
+                      
+                      
+                      apiResponse1.Url=job_url;
+                      apiResponse1.Name=name;
+                      apiResponse1.job_out_url = job_out_url;
+                     // apiResponse1.user = user;
+                     
+                      
+                      callback(null,apiResponse1,result1);
+                    });
+                    });
+                }
+                else {
+                  let ress;
+                  callback(null, "Job is already running");
+                  callback(null,ress.data);
+                }
+              
+                   
+                  
+                
+                    
+                
+}).catch((error)=>{
+  apiResponse.status=true;
+        apiResponse.messgae="JOB DETAILS";
+        apiResponse.data=error;
+       
+        
+      //  callback(apiResponse,null);
+});
+
+  con.release();
+    
+  });
+    
+});
+
+}
+
+                 
+
+});
+});
+};
+
+
 
 
