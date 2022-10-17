@@ -66,6 +66,7 @@ else{
       if (err) throw err;
       var user_name = results[0].username;
       var password = results[0].password;
+      var IP = results[0].transcoderIp;
 // }
 // })
 // })
@@ -86,7 +87,7 @@ else{
   //console.log("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobId = '"+job_iD+"'")
     if (err) throw err;
     
-  var url = "http://skycode5.riversilica.com/users";
+    var url = IP+"/users"
   const data={};
    data.user_name = user_name;
    data.password = password;
@@ -115,7 +116,7 @@ else{
           callback(null, apiResponse);
         }
         
-                let url1 = "http://skycode5.riversilica.com/jobs/job_get/"+job_Name;
+let url1 = IP+"/jobs/job_get/"+job_Name;
                 // console.log(url1);
                 axios.get(url1, {headers:{"Cookie":phpSessionId}})
               // console.log(phpSessionId)
@@ -129,7 +130,7 @@ else{
                 
                 if(response != "running")
                 {
-                  let url2 = "http://skycode5.riversilica.com/jobs/job_start/"+job_Name+"?node_name="+node;
+                  let url2 = IP+"/jobs/job_start/"+job_Name+"?node_name="+node;
                   //console.log(url2)
                     axios.get(url2, {headers:{"Cookie": phpSessionId}})
                     //console.log(phpSessionId)
@@ -194,7 +195,7 @@ else{
                       var apiResponse1 = {};
                       apiResponse1.rtmp_url=rtmp_url;
                       apiResponse1.job_Name=job_Name;
-                      apiResponse1.job_out_url = HlsoutUrl;
+                      apiResponse1.HlsoutUrl = HlsoutUrl;
                     // apiResponse1.user = user;
                      
                       
