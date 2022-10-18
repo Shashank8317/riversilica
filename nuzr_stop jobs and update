@@ -1,16 +1,7 @@
 const mysql = require('mysql');
 const qs = require('qs');
 const axios = require('axios');
-var FormData = require('form-data');
-var fs = require('fs');
-                                    // const formData = new FormData();
-                                    // formData.append('title', 'new live assefffffft-151');
-                                    // formData.append('assetUrl', 'http://rsweb.dishhome.com.np/fightsportshd_03_px0219285/index.m3u8');
-                                    // formData.append('thumbnails', fs.createReadStream('./photos local/KGF.jpg'));
-                                    // formData.append('account_id', 1);
-                                    // formData.append('createdBy', '94');
-                                    // formData.append('isDRMRequired', '1');
-                                    // formData.append('description', 'for testing');
+const axios1 = require('axios');
 
 const pool = mysql.createPool({
   connectionLimit : 10,
@@ -18,84 +9,67 @@ const pool = mysql.createPool({
   user     : 'pixfixlocal',
   password : 'Pixfix@123',
   database : 'pixfix_test'
+  
+ 
 });
 
-// var job_name;
-// var job_url;
-exports.handler =  function(event, context, callback) {
-  //console.log("EVENT: \n" + JSON.stringify(event, null, 2));
- 
-  //return title+" "+username+" "+location;
-  
+var job_Name;
+var job_url;
+var user_name;
+var Password;
+
+exports.handler = (event, context, callback) => {
+    
+ var url=event['url'];
+ let errorMsg = {};
+  let status = true;
+  if(url == "")
+  {
+    errorMsg =  "url Should not be Empty";
+    status = false;
+  }
+  let error = 
+  {
+    status :false,
+    message: errorMsg
+  };
+  if(status != true)
+{
+  callback(null, error);
+  return;
+}
 
 
-  var apiResponse = {};
-  var job_iD;
-  var job_Name;
-  var rtmp_url;
-  var HlsoutUrl;
-//  var user_name='kalindh';
-// var title='streaming';
-// var location = 'banglore';
-  
-
-  
-  context.callbackWaitsForEmptyEventLoop = false;
+ context.callbackWaitsForEmptyEventLoop = false;
   pool.getConnection(function(err, con) {
     if (err) throw err;
-    con.query("SELECT * FROM tbl_job_details where status = 'free'", function (err, result, fields) {
+    con.query("SELECT * FROM tbl_job_details where RTMPurl= '"+url+"'", function (err, result, fields) {
     if (err) throw err;
-    console.log(result.length);
-    if(result.length == 0){
-      console.log("no job found");
-      apiResponse.status=false;
-      apiResponse.message="NO JOB FOUND";
-      callback(null, apiResponse);
-       
-    }
-
-else{
+    console.log(result)
     
-    //user = result[0].currentUser;
-    job_iD= result[0].jobID;
-    job_Name= result[0].jobNAME;
-    rtmp_url = result[0].RTMPurl;
-    HlsoutUrl = result[0].HlsOutUrl;
-     
-    con.query("select * from tbl_live_transcoder" , function (err, results, fields){
+                     job_Name = result[0].jobNAME;
+                    // console.log(result);
+                  //  callback(null, job_Name);
+                    
+                    
+ 
+  
+ con.query("SELECT * FROM tbl_live_transcoder" , function (err, result2, fields) {
       if (err) throw err;
-      var user_name = results[0].username;
-      var password = results[0].password;
-      var IP = results[0].transcoderIp;
-// }
-// })
-// })
-// }
-    
-      
-    
-    
-     
-     
-    
-     
-     
-    console.log(job_iD);
-     
-  con.query("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobID = '"+job_iD+"'" , function (err, result, fields) {
-       
-  //console.log("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobId = '"+job_iD+"'")
-    if (err) throw err;
-    
-    var url = IP+"/users"
-  const data={};
-   data.user_name = user_name;
-   data.password = password;
+      user_name=result2[0].username;
+      Password=result2[0].password;
+      var IP = result2[0].transcoderIp;
+                  
+var url = IP+"/users";
+  const data={
+      user_name:user_name,
+      password:Password
+  };
   
   axios.post(url, qs.stringify(data))
     .then((res) => {
-      console.log(url);
-      console.log(JSON.stringify(res.data));
+    //  console.log(url);
+      //console.log(JSON.stringify(res.data));
         
         if(res.data["status"]=="success"){
           var cookieRes=res.headers['set-cookie'];
@@ -103,141 +77,47 @@ else{
           var sessionValArray=cookieArray[0].split("=");
           var phpSessionId=cookieArray[0];
           
-          // apiResponse.status=true;
-          // apiResponse.messgae="JOB DETAILS";
-          // apiResponse.data=cookieArray[0];
-          // callback(null, apiResponse);
-                      
-        }
-        else
-        {
-          apiResponse.status=false;
-          apiResponse.messgae="Invalid Authorization";
-          callback(null, apiResponse);
-        }
-        
-let url1 = IP+"/jobs/job_get/"+job_Name;
-                // console.log(url1);
-                axios.get(url1, {headers:{"Cookie":phpSessionId}})
-              // console.log(phpSessionId)
-                .then((res2) =>{ 
-                  console.log("entering");
-                  //console.log(res2.data.pfmt_job.node_name);
-                
-                // console.log(res2.data.pfmt_job.job_status);
-                var response = res2.data.pfmt_job.job_status;
-                var node = res2.data.pfmt_job.node_name;
-                
-                if(response != "running")
-                {
-                  let url2 = IP+"/jobs/job_start/"+job_Name+"?node_name="+node;
-                  //console.log(url2)
-                    axios.get(url2, {headers:{"Cookie": phpSessionId}})
-                    //console.log(phpSessionId)
-                    .then((res3) =>{ 
-                            // if(res3.data.status=="pass"){
-                          //   console.log("responseeeeeeeeeeeee",res3)
-                          
-                      
-
-                        
-                        //var link = "http://192.46.214.49:3000/pixfixws/create/live";
-          // var username=event['username'];
-          // //var job_url=event['job_url'];
-          // var title=event['title']; 
-          // var location=event['location'];
-          // // var username1=event['job_url'];  
-  var jsonData = JSON.parse(JSON.stringify(event).replace("body-json","body"));
-  console.log(jsonData.body);
-  var postParams = jsonData.body.split("&");
-  var title="";
-  var username="";
-  var location="";
-  title = (postParams[0].split("="))[1];
-  username = (postParams[1].split("="))[1];
-  location = (postParams[2].split("="))[1];
-               
-        con.query("INSERT INTO tbl_live_assets1(assetUrl, username, title, location, isDRMRequired) VALUES('"+rtmp_url+"','"+username+"', '"+title+"','"+location+"', 'false' )", function (err, result1, fields){
-                                  if (err) throw err;
-                                    console.log(result1);
+          let url1 = IP+"/jobs/job_get/"+job_Name;
+                        console.log(url1);
+                       
+                          axios1.get(url1, {headers:{"Cookie":phpSessionId}})
+                     
+                          .then((res1) =>{ 
+                                var response = res1.data.pfmt_job.job_status;
                                 
-                    // console.log("live assets");
-                    //             axios.post(link, formData, {
-                    //                                 headers: { "Content-Type": "multipart/form-data",},
-                    //                                         })
-                                                           
-                    //                                       .then((resp) => {
-                    //                                         console.log(resp.data);
-                                                             
-                    //                                         // callback(null,"assets created successfully");
-                    //                                                       })
-                    //                                                   .catch((err) => {
-                    //                                                         console.log(err);
-                    //                                                         });
-           
-          
-                    //   }
-       
-                     
-                     
-                      
-                      // var serverUrl = res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url;
-                      // var name = res2.data.pfmt_job.job_name;
-                      // var ID = res2.data.pfmt_job.pfmt_job_id;
+                              if(response !="running")
+                            {
+                                
+                                      callback(null,"Job is not running"); 
+                                        
+                                }
+                                else {
+                                    let url2 = IP+"/jobs/job_stop/"+job_Name;
+                                    axios1.post(url2,[], {headers:{"Cookie":phpSessionId}})
+                                    
+                                    .then((res2) =>{ 
+                                         console.log("job stoped successfully");
+                                        callback(null,"Job stopped successfully");
+                                        
+                                    })
+                                    .catch((error) => {
+                                      console.log("error while stopping job",JSON.stringify(error));
+                                    
+                                });
+                                 con.query("update tbl_job_details set status = 'free', currentUser = 'null' where jobNAME = '"+job_Name+"'" , function (err, result, fields){
+                                  if (err) throw err;
+                                 });
+                                 }
+                                });
+                                
+                                
+                          }
+                       
+                     });
+ });
+    });
                 
-                      // var serverUrl= 
-
-                      // console.log(res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url);
-                      // console.log(name);
-                      // console.log(ID);
-                     
-                      
-                      var apiResponse1 = {};
-                      apiResponse1.rtmp_url=rtmp_url;
-                      apiResponse1.job_Name=job_Name;
-                      apiResponse1.HlsoutUrl = HlsoutUrl;
-                    // apiResponse1.user = user;
-                     
-                      
-                      callback(null, apiResponse1);
-                    });
-                    });
-                }
-                else {
-                  let ress;
-                  callback(null, "Job is already running");
-                  callback(null,ress.data);
-                }
-              
-                   
-                  
-                
-                    
-                
-}).catch((error)=>{
-  apiResponse.status=true;
-        apiResponse.messgae="JOB DETAILS";
-        apiResponse.data=error;
-       
-        
-      //  callback(apiResponse,null);
-});
-
-  con.release();
-    
-  });
-  });
-    
-});
-
-}
-
-                 
-
-});
-});
-};
-
-
+                });
+        };
 
 
