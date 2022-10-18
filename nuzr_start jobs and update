@@ -15,37 +15,40 @@ const pool = mysql.createPool({
 // var job_name;
 // var job_url;
 exports.handler =  function(event, context, callback) {
-   var jsonData = JSON.parse(JSON.stringify(event).replace("body-json","body"));
+  var jsonData = JSON.parse(JSON.stringify(event).replace("body-json","body"));
   console.log(jsonData.body);
   var postParams = jsonData.body ? jsonData.body.split("&") : [];
+//  var postParams = jsonData.body.split("&");
+ // var res = postParams.toString().replace(/%20/g,' ');
+ // callback(null, res);
+
   var title="";
   var username="";
   var location="";
   
 
-
-  postParams[0]? check(postParams[0]): "";
+ postParams[0]? check(postParams[0]): "";
   postParams[1] ? check(postParams[1]) : "";
   postParams[2] ? check(postParams[2]) : "";
   
     function check(data)
   {
-     let response = data.split("=");
+    let response = data.split("=");
     
     if(response["0"] == "title")
     {
-      title = response["1"];
+      title = response["1"].toString().replace(/%20/g,' ');
     }
     else
     if(response["0"] == "username")
     {
-      username  = response["1"];
+      username  = response["1"].toString().replace(/%20/g,' ');
     }
     else
-     if(response["0"] == "location")
-     {
-       location = response["1"];
-     }
+    if(response["0"] == "location")
+    {
+      location = response["1"].toString().replace(/%20/g,' ');
+    }
   }
   
   let errorMsg = {};
@@ -56,16 +59,16 @@ exports.handler =  function(event, context, callback) {
     status = false;
   }
   
-   if(username == "")
+  if(username == "")
   {
     errorMsg.Username=  "username Should not be Empty";
-     status = false;
+    status = false;
   }
   
-   if(location == "")
+  if(location == "")
   {
     errorMsg.Location=  `location Should not be Empty`;
-     status = false;
+    status = false;
   }
  
   
@@ -80,7 +83,7 @@ if(status != true)
   callback(null, error);
   return;
 }
- 
+
 
   var apiResponse = {};
   var job_iD;
@@ -129,8 +132,8 @@ else
     
     var url = IP+"/users";
   const data={};
-   data.user_name = user_name;
-   data.password = password;
+  data.user_name = user_name;
+  data.password = password;
   
   axios.post(url, qs.stringify(data))
     .then((res) => {
@@ -181,6 +184,7 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
                           
         con.query("INSERT INTO tbl_live_assets(assetUrl, createdBy, title, description, isDRMRequired,orgId) VALUES('"+rtmp_url+"','"+username+"','"+title+"','"+location+"',1,'1')", function (err, result1, fields){
                                   if (err) throw err;
+                                  console.log(username);
                                     console.log(result1);
                                 
                    
@@ -233,7 +237,7 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
 });
 };
 
- // const formData = new FormData();
+// const formData = new FormData();
   //var link = "http://192.46.214.49:3000/pixfixws/create/live";
                                     // formData.append('title', 'new live assefffffft-151');
                                     // formData.append('assetUrl', 'http://rsweb.dishhome.com.np/fightsportshd_03_px0219285/index.m3u8');
@@ -245,7 +249,7 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
                                     
                                     
                                     
- // console.log("live assets");
+// console.log("live assets");
                     //             axios.post(link, formData, {
                     //                                 headers: { "Content-Type": "multipart/form-data",},
                     //                                         })
@@ -276,6 +280,6 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
                       // console.log(ID);
                       
                       
-                       //console.log("EVENT: \n" + JSON.stringify(event, null, 2));
+                      //console.log("EVENT: \n" + JSON.stringify(event, null, 2));
  
   //return title+" "+username+" "+location;
