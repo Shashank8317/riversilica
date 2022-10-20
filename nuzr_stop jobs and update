@@ -17,11 +17,13 @@ var job_Name;
 var job_url;
 var user_name;
 var Password;
+var IP;
+var apiResponse={};
 
 exports.handler = (event, context, callback) => {
     
- var url=event['url'];
- let errorMsg = {};
+var url=event['url'];
+let errorMsg = {};
   let status = true;
   if(url == "")
   {
@@ -45,9 +47,9 @@ exports.handler = (event, context, callback) => {
     if (err) throw err;
     con.query("SELECT * FROM tbl_job_details where RTMPurl= '"+url+"'", function (err, result, fields) {
     if (err) throw err;
-    console.log(result)
+    //console.log(result)
     
-                     job_Name = result[0].jobNAME;
+                    job_Name = result[0].jobNAME;
                     // console.log(result);
                   //  callback(null, job_Name);
                     
@@ -56,26 +58,35 @@ exports.handler = (event, context, callback) => {
   
  con.query("SELECT * FROM tbl_live_transcoder" , function (err, result2, fields) {
       if (err) throw err;
-      user_name=result2[0].username;
+      user_name=result2[0].user_name;
       Password=result2[0].password;
-      var IP = result2[0].transcoderIp;
+       IP = result2[0].transcoderurl;
+     
                   
 var url = IP+"/users";
   const data={
       user_name:user_name,
       password:Password
-  };
+  }; 
   
   axios.post(url, qs.stringify(data))
     .then((res) => {
     //  console.log(url);
       //console.log(JSON.stringify(res.data));
         
-        if(res.data["status"]=="success"){
+        if(res.data["status"]=="success")
+        {
           var cookieRes=res.headers['set-cookie'];
           var cookieArray=cookieRes.split(";");
           var sessionValArray=cookieArray[0].split("=");
           var phpSessionId=cookieArray[0];
+        }
+        else
+        {
+          apiResponse.status=false;
+          apiResponse.messgae="Invalid Authorization";
+          callback(null, apiResponse);
+        }
           
           let url1 = IP+"/jobs/job_get/"+job_Name;
                         console.log(url1);
@@ -99,25 +110,27 @@ var url = IP+"/users";
                                          console.log("job stoped successfully");
                                         callback(null,"Job stopped successfully");
                                         
+                                         con.query("update tbl_job_details set status = 'free', currentUser = 'null' where jobNAME = '"+job_Name+"'" , function (err, result, fields){
+                                  if (err) throw err;
+                                 });
                                     })
                                     .catch((error) => {
                                       console.log("error while stopping job",JSON.stringify(error));
                                     
                                 });
-                                 con.query("update tbl_job_details set status = 'free', currentUser = 'null' where jobNAME = '"+job_Name+"'" , function (err, result, fields){
-                                  if (err) throw err;
-                                 });
+                                
                                  }
                                 });
                                 
                                 
-                          }
+                          })
                        
                      });
  });
     });
+}
                 
-                });
-        };
+                
+        
 
 
