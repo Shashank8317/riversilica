@@ -20,7 +20,7 @@ exports.handler =  function(event, context, callback) {
   var postParams = jsonData.body ? jsonData.body.split("&") : [];
 //  var postParams = jsonData.body.split("&");
  // var res = postParams.toString().replace(/%20/g,' ');
- // callback(null, res);
+
 
   var title="";
   var username="";
@@ -102,7 +102,7 @@ if(status != true)
     if(result.length == 0)
     {
       console.log("no job found");
-      apiResponse.status="false";
+      apiResponse.status=false;
       apiResponse.message="NO JOB FOUND";
       callback(null, apiResponse);
        
@@ -119,13 +119,13 @@ else
      
     con.query("select * from tbl_live_transcoder" , function (err, results, fields){
       if (err) throw err;
-      var user_name = results[0].username;
+      var user_name = results[0].user_name;
       var password = results[0].password;
-      var IP = results[0].transcoderIp;
+      var IP = results[0].transcoderurl;
  
     console.log(job_iD);
      
-  con.query("update tbl_job_details set status = 'running', currentUser =  '"+username+"' where jobID = '"+job_iD+"'" , function (err, result, fields) {
+  con.query("update tbl_job_details set status = 'used', currentUser =  '"+username+"' where jobID = '"+job_iD+"'" , function (err, result, fields) {
        
   //console.log("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobId = '"+job_iD+"'")
     if (err) throw err;
@@ -191,7 +191,7 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
                      
                       
                       var apiResponse1 = {};
-                      apiResponse1.status="success";
+                      apiResponse1.status=true;
                       apiResponse1.rtmp_url=rtmp_url;
                       apiResponse1.job_Name=job_Name;
                       apiResponse1.HlsoutUrl = HlsoutUrl;
