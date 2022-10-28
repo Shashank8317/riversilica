@@ -1,8 +1,7 @@
 const mysql = require('mysql');
 const qs = require('qs');
 const axios = require('axios');
-//var FormData = require('form-data');
-//var fs = require('fs');
+
                                    
 const pool = mysql.createPool({
   connectionLimit : 10,
@@ -101,7 +100,7 @@ if(status != true)
     console.log(result.length);
     if(result.length == 0)
     {
-      console.log("no job found");
+     // console.log("no job found");
       apiResponse.status=false;
       apiResponse.message="NO JOB FOUND";
       callback(null, apiResponse);
@@ -126,8 +125,7 @@ else
     console.log(job_iD);
      
   con.query("update tbl_job_details set status = 'used', currentUser =  '"+username+"' where jobID = '"+job_iD+"'" , function (err, result, fields) {
-       
-  //console.log("update tbl_job_details set status = 'used', currentUser = 'shashank' where jobId = '"+job_iD+"'")
+
     if (err) throw err;
     
     var url = IP+"/users";
@@ -146,12 +144,7 @@ else
           var cookieArray=cookieRes.split(";");
           var sessionValArray=cookieArray[0].split("=");
           var phpSessionId=cookieArray[0];
-          
-          // apiResponse.status=true;
-          // apiResponse.messgae="JOB DETAILS";
-          // apiResponse.data=cookieArray[0];
-          // callback(null, apiResponse);
-                      
+    
         }
         else
         {
@@ -161,28 +154,26 @@ else
         }
         
 let url1 = IP+"/jobs/job_get/"+job_Name;
-                // console.log(url1);
+           
                 axios.get(url1, {headers:{"Cookie":phpSessionId}})
-              // console.log(phpSessionId)
+         
                 .then((res2) =>{ 
                   
                   console.log("entering");
-                  //console.log(res2.data.pfmt_job.node_name);
-                
-                // console.log(res2.data.pfmt_job.job_status);
+                  
                 var response = res2.data.pfmt_job.job_status;
                 var node = res2.data.pfmt_job.node_name;
                 
                 if(response != "running")
                 {
                   let url2 = IP+"/jobs/job_start/"+job_Name+"?node_name="+node;
-                  //console.log(url2)
+               
                     axios.get(url2, {headers:{"Cookie": phpSessionId}})
-                    //console.log(phpSessionId)
+            
                     .then((res3) =>{ 
-                            // if(res3.data.status=="pass"){
+                            
                           
-        con.query("INSERT INTO tbl_live_assets(assetUrl, createdBy, title, description, isDRMRequired,orgId) VALUES('"+rtmp_url+"','"+username+"','"+title+"','"+location+"',1,'1')", function (err, result1, fields){
+        con.query("INSERT INTO tbl_live_assets(assetUrl, createdBy, title, description, isDRMRequired,orgId) VALUES('"+HlsoutUrl+"','"+username+"','"+title+"','"+location+"',1,'1')", function (err, result1, fields){
                                   if (err) throw err;
                                   console.log(username);
                                     console.log(result1);
@@ -218,8 +209,7 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
         apiResponse.messgae="JOB DETAILS";
         apiResponse.data=error;
        
-        
-      //  callback(apiResponse,null);
+     
 });
 
   con.release();
