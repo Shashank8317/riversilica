@@ -2,14 +2,14 @@ const mysql = require('mysql');
 const qs = require('qs');
 const axios = require('axios');
 
-                                   
 const pool = mysql.createPool({
   connectionLimit : 10,
-  host     : 'soapboxinternal.riversilica.com',
-  user     : 'pixfixlocal',
+   host     : 'skycode9.riversilica.com',
+  user     : 'pixfix_local',
   password : 'Pixfix@123',
-  database : 'pixfix_test'
+  database : 'pixfix_local'
 });
+;
 
 // var job_name;
 // var job_url;
@@ -17,18 +17,19 @@ exports.handler =  function(event, context, callback) {
   var jsonData = JSON.parse(JSON.stringify(event).replace("body-json","body"));
   console.log(jsonData.body);
   var postParams = jsonData.body ? jsonData.body.split("&") : [];
-//  var postParams = jsonData.body.split("&");
- // var res = postParams.toString().replace(/%20/g,' ');
 
 
-  var title="";
-  var username="";
-  var location="";
+  var title="latha";
+  var username="suadmin";
+  var location="banglored";
+  var tag="tag";
   
 
- postParams[0]? check(postParams[0]): "";
+  postParams[0] ? check(postParams[0]) : "";
   postParams[1] ? check(postParams[1]) : "";
   postParams[2] ? check(postParams[2]) : "";
+  postParams[3] ? check(postParams[3]) : "";
+  
   
     function check(data)
   {
@@ -36,37 +37,50 @@ exports.handler =  function(event, context, callback) {
     
     if(response["0"] == "title")
     {
-      title = response["1"].toString().replace(/%20/g,' ');
+      title = decodeURI(response["1"].replace(/\+/g,' '));
     }
     else
     if(response["0"] == "username")
     {
-      username  = response["1"].toString().replace(/%20/g,' ');
+      username  =  decodeURI(response["1"].replace(/\+/g,' '));
     }
     else
     if(response["0"] == "location")
     {
-      location = response["1"].toString().replace(/%20/g,' ');
+      location =  decodeURI(response["1"].replace(/\+/g,' '));
     }
+    else
+    if(response["0"] == "tag")
+    {
+      tag = decodeURI(response["1"].replace(/\+/g,' '));
+    } 
+  
   }
+
   
   let errorMsg = {};
   let status = true;
   if(title == "")
   {
-    errorMsg.Title =  "title Should not be Empty";
+    errorMsg =  "title Should not be Empty";
     status = false;
   }
   
   if(username == "")
   {
-    errorMsg.Username=  "username Should not be Empty";
+    errorMsg=  "username Should not be Empty";
     status = false;
   }
   
   if(location == "")
   {
-    errorMsg.Location=  `location Should not be Empty`;
+    errorMsg=  `location Should not be Empty`;
+    status = false;
+  }
+  
+  if(tag == "")
+  {
+    errorMsg=  `tag Should not be Empty`;
     status = false;
   }
  
@@ -84,23 +98,40 @@ if(status != true)
 }
 
 
+
+
   var apiResponse = {};
   var job_iD;
   var job_Name;
   var rtmp_url;
   var HlsoutUrl;
-
+ 
 
   
   context.callbackWaitsForEmptyEventLoop = false;
-  pool.getConnection(function(err, con) {
+  
+pool.getConnection(function(err, con) {    if (err) throw err;
+  
+    con.query("SELECT * FROM tbl_live_assets where title = '"+title+"'", function (err, resultt, fields) {
     if (err) throw err;
-    con.query("SELECT * FROM tbl_job_details where status = 'free'", function (err, result, fields) {
+  console.log(resultt)
+if(resultt.length > 0)
+{
+      var responsee={};
+      responsee.status=false;
+      responsee.message=title+ " Name already exist";
+      callback(null, responsee);
+    }
+else
+    {
+  
+   con.beginTransaction();
+    con.query("SELECT * FROM tbl_job_details where status = 'free' limit 1 for update" , function (err, result, fields) {
     if (err) throw err;
     console.log(result.length);
     if(result.length == 0)
     {
-     // console.log("no job found");
+      
       apiResponse.status=false;
       apiResponse.message="NO JOB FOUND";
       callback(null, apiResponse);
@@ -109,24 +140,27 @@ if(status != true)
 
 else
     {
+ 
     
-    
-    job_iD= result[0].jobID;
+    job_iD= result[0].id;
     job_Name= result[0].jobNAME;
     rtmp_url = result[0].RTMPurl;
-    HlsoutUrl = result[0].HlsOutUrl;
+    HlsoutUrl = result[0].hlsOut;
+    
+        con.query("update tbl_job_details set status = 'used', currentUser =  '"+username+"' where id = '"+job_iD+"'" , function (err, result, fields) {
+if (err) throw err;
+con.commit();
+});
      
     con.query("select * from tbl_live_transcoder" , function (err, results, fields){
       if (err) throw err;
-      var user_name = results[0].user_name;
+      var user_name = results[0].username;
       var password = results[0].password;
-      var IP = results[0].transcoderurl;
+      var IP = results[0].transcoderIp;
  
-    console.log(job_iD);
+ 
      
-  con.query("update tbl_job_details set status = 'used', currentUser =  '"+username+"' where jobID = '"+job_iD+"'" , function (err, result, fields) {
-
-    if (err) throw err;
+  
     
     var url = IP+"/users";
   const data={};
@@ -153,13 +187,17 @@ else
           callback(null, apiResponse);
         }
         
+    //     con.query("update tbl_job_details set status = 'used', currentUser =  '"+username+"' where transcoderID = '"+job_iD+"'" , function (err, result, fields) {
+
+    // if (err) throw err;
+        
 let url1 = IP+"/jobs/job_get/"+job_Name;
            
                 axios.get(url1, {headers:{"Cookie":phpSessionId}})
          
                 .then((res2) =>{ 
                   
-                  console.log("entering");
+               
                   
                 var response = res2.data.pfmt_job.job_status;
                 var node = res2.data.pfmt_job.node_name;
@@ -172,28 +210,120 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
             
                     .then((res3) =>{ 
                             
-                          
-        con.query("INSERT INTO tbl_live_assets(assetUrl, createdBy, title, description, isDRMRequired,orgId) VALUES('"+HlsoutUrl+"','"+username+"','"+title+"','"+location+"',1,'1')", function (err, result1, fields){
+                    con.query("update tbl_job_details set status = 'used', currentUser =  '"+username+"' where jobNAME = '"+job_Name+"'" , function (err, result, fields) {
+if (err) throw err;
+    if(result)
+    {
+        con.query("SELECT * FROM tbl_users_master where userId ='"+username+"'",function (err, result1, fields)
+          {
+            if (err) throw err;
+            var user=result1[0].id;
+            
+            if(result1)
+            {
+        con.query("INSERT INTO tbl_live_assets(assetUrl, createdBy, title, description, isDRMRequired,orgId) VALUES('"+HlsoutUrl+"','"+user+"','"+title+"','"+location+"',1,'1')", function (err, result2, fields)
+        {
                                   if (err) throw err;
-                                  console.log(username);
-                                    console.log(result1);
-                                
-                   
-                     
-                      
-                      var apiResponse1 = {};
-                      apiResponse1.status=true;
-                      apiResponse1.rtmp_url=rtmp_url;
-                      apiResponse1.job_Name=job_Name;
-                      apiResponse1.HlsoutUrl = HlsoutUrl;
-                    
-                     
-                      
-                      callback(null, apiResponse1);
-                    });
-                    });
+                                  // console.log(username);
+                                  //   console.log(result1);
+                                   if (result2) {
+
+          con.query("SELECT * FROM tbl_tags where tag='"+tag+"'",function (err,response,fields) {
+ if (err) throw err;
+            if (response.length > 0) 
+            {
+
+          con.query("SELECT * FROM tbl_tags where tag ='"+tag+"'",function (err,result4,fields) {
+
+          if (err) throw err;
+
+            var tagid =result4[0].id;
+
+ 
+
+        if (result4)
+        {                                               
+
+          con.query("SELECT * FROM tbl_live_assets where title ='"+title+"'",function (err,result5,fields) {
+
+          if (err)throw err;
+          var assetid =result5[0].id;
+
+ 
+
+          if (result5)
+          {
+
+        con.query("INSERT INTO tbl_tag_asset_association(assetId, tagId, categoryId, active,createdBy,updatedBy) VALUES('" +assetid+"','"+tagid+"','1','1','"+user+"','"+user+"')",function (err,result6,fields) {
+
+        if (err)throw err;
+
+        var apiResponse1 ={};
+        apiResponse1.status = true;
+          apiResponse1.rtmp_url =rtmp_url;
+          apiResponse1.job_Name =job_Name;
+            apiResponse1.HlsoutUrl =HlsoutUrl;
+
+        callback(null,apiResponse1);
+          });
+          }
+          });
+          }
+          });
+          } 
+          else
+          
+          {
+
+          con.query("INSERT INTO tbl_tags(tag, active, createdBy) VALUES('"+tag+"','1','"+user+"')",function (err,result3,fields) {
+    if (err) throw err;
+    
+if (result3) 
+{
+  con.query("SELECT * FROM tbl_tags where tag ='"+tag+"'",function (err,result4,fields) {
+  if (err) throw err;
+    var tagid =result4[0].id;
+    
+  if (result4)
+  {
+con.query("SELECT * FROM tbl_live_assets where title ='"+title+"'",function (err,result5,fields) {
+    if (err) throw err;
+var assetid =result5[0].id;
+
+if (result5)
+{
+con.query("INSERT INTO tbl_tag_asset_association(assetId, tagId, categoryId, active,createdBy,updatedBy) VALUES('"+assetid+"','"+tagid+"','1','1','"+user+"','"+user+"')", function (err,result6,fields) {
+  if (err) throw err;
+  
+var apiResponse1 ={};
+        apiResponse1.status = true;
+        apiResponse1.rtmp_url =rtmp_url;
+        apiResponse1.job_Name =  job_Name;
+  apiResponse1.HlsoutUrl = HlsoutUrl;
+  apiResponse1.resultt = resultt;
+callback(null,apiResponse1);
+  });
+  
+            }
+      });
+      }
+    });
+      }
+  });
+  }
+  });
+              }
+    });
+}
+    });
+  }
+});
+                    });                             
+    
+                
                 }
-                else {
+                else 
+                {
                   let ress;
                   callback(null, "Job is already running");
                   callback(null,ress.data);
@@ -217,59 +347,23 @@ let url1 = IP+"/jobs/job_get/"+job_Name;
   });
   });
     
-});
-
 }
 
-                 
 
+});
+
+
+ 
+
+}
+// else
+//     {
+//       var responsee={};
+//       responsee.status=false;
+//       responsee.message=title+ " Name already exist";
+//       callback(null, responsee);
+//     }
 });
 });
 };
 
-// const formData = new FormData();
-  //var link = "http://192.46.214.49:3000/pixfixws/create/live";
-                                    // formData.append('title', 'new live assefffffft-151');
-                                    // formData.append('assetUrl', 'http://rsweb.dishhome.com.np/fightsportshd_03_px0219285/index.m3u8');
-                                    // formData.append('thumbnails', fs.createReadStream('./photos local/KGF.jpg'));
-                                    // formData.append('account_id', 1);
-                                    // formData.append('createdBy', '94');
-                                    // formData.append('isDRMRequired', '1');
-                                    // formData.append('description', 'for testing');
-                                    
-                                    
-                                    
-// console.log("live assets");
-                    //             axios.post(link, formData, {
-                    //                                 headers: { "Content-Type": "multipart/form-data",},
-                    //                                         })
-                                                           
-                    //                                       .then((resp) => {
-                    //                                         console.log(resp.data);
-                                                             
-                    //                                         // callback(null,"assets created successfully");
-                    //                                                       })
-                    //                                                   .catch((err) => {
-                    //                                                         console.log(err);
-                    //                                                         });
-           
-          
-                    //   }
-       
-                     
-                     
-                      
-                      // var serverUrl = res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url;
-                      // var name = res2.data.pfmt_job.job_name;
-                      // var ID = res2.data.pfmt_job.pfmt_job_id;
-                
-                      // var serverUrl= 
-
-                      // console.log(res2.data.pfmt_job.pfmt_input_group.inputs[0].pfmt_input.streamer[0].pfmt_input_stream.gstaf_src.gstaf_src_rtmp.server_url);
-                      // console.log(name);
-                      // console.log(ID);
-                      
-                      
-                      //console.log("EVENT: \n" + JSON.stringify(event, null, 2));
- 
-  //return title+" "+username+" "+location;
